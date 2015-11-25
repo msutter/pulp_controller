@@ -30,4 +30,10 @@ var routes = Routes{
         "/servers/{serverId}",
         ServerShow,
     },
+    Route{
+        "ServerCreate",
+        "POST",
+        "/servers",
+        ServerCreate,
+    },
 }
