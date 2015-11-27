@@ -21,15 +21,11 @@ func ServerIndex(w http.ResponseWriter, r *http.Request) {
     w.Header().Set("Content-Type", "application/json; charset=UTF-8")
     w.WriteHeader(http.StatusOK)
 
-    session := Connect()
+    session, collection := InitServerCollection()
     defer session.Close()
-    c := session.DB("pulp_manager_api_test").C("servers")
     servers := Servers{}
-    err := c.Find(bson.M{}).All(&servers)
 
-    if err != nil {
-        log.Fatal(err)
-    }
+    SearchAll(bson.M{}, collection, &servers)
 
     if err := json.NewEncoder(w).Encode(servers); err != nil {
         panic(err)
@@ -37,21 +33,13 @@ func ServerIndex(w http.ResponseWriter, r *http.Request) {
 }
 
 func ServerShow(w http.ResponseWriter, r *http.Request) {
-    vars := mux.Vars(r)
-    serverId := vars["serverId"]
-    oid := bson.ObjectIdHex(serverId)
+    oid := getOID("serverId", r)
 
-    session := Connect()
+    session, collection := InitServerCollection()
     defer session.Close()
-    c := session.DB("pulp_manager_api_test").C("servers")
     server := Server{}
 
-
-    err := c.Find(bson.M{"_id": oid}).One(&server)
-
-    if err != nil {
-        log.Print(err)
-    }
+    SearchOne(bson.M{"_id": oid}, collection, &server)
 
     if err := json.NewEncoder(w).Encode(server); err != nil {
         panic(err)
@@ -76,17 +64,36 @@ func ServerCreate(w http.ResponseWriter, r *http.Request) {
             panic(err)
         }
     }
-    session := Connect()
+    session, collection := InitServerCollection()
     defer session.Close()
     server.Added = time.Now()
-    c := session.DB("pulp_manager_api_test").C("servers")
-    err = c.Insert(server)
+    err = collection.Insert(server)
     if err != nil {
-        log.Fatal(err)
+        log.Println(err)
     }
     w.Header().Set("Content-Type","application/json; charset=UTF=8")
     w.WriteHeader(http.StatusCreated)
     if err := json.NewEncoder(w).Encode(server); err != nil {
         panic(err)
     }
+}
+
+func ServerDelete(w http.ResponseWriter, r *http.Request) {
+    oid := getOID("serverId", r)
+    session, collection := InitServerCollection()
+    defer session.Close()
+    err := collection.Remove(bson.M{"_id": oid})
+    if err != nil {
+        w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+        w.WriteHeader(http.StatusInternalServerError)
+        if err := json.NewEncoder(w).Encode(err); err != nil {
+            log.Println(err)
+        }
+    }
+}
+
+func getOID(name string, r *http.Request) bson.ObjectId {
+    vars := mux.Vars(r)
+    id := vars[name]
+    return bson.ObjectIdHex(id)
 }

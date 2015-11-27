@@ -2,6 +2,8 @@ package main
 
 import "net/http"
 
+const api_version string = "/v1"
+
 type Route struct {
     Name        string
     Method      string
@@ -15,25 +17,31 @@ var routes = Routes{
     Route{
         "Index",
         "GET",
-        "/",
+        api_version,
         Index,
     },
     Route{
         "ServerIndex",
         "GET",
-        "/servers",
+        api_version + "/servers",
         ServerIndex,
     },
     Route{
         "ServerShow",
         "GET",
-        "/servers/{serverId}",
+        api_version + "/servers/{serverId}",
         ServerShow,
     },
     Route{
         "ServerCreate",
         "POST",
-        "/servers",
+        api_version + "/servers",
         ServerCreate,
+    },
+    Route{
+        "ServerDelete",
+        "DELETE",
+        api_version + "/servers/{serverId}",
+        ServerDelete,
     },
 }
