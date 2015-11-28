@@ -5,8 +5,6 @@ import (
     "fmt"
     "net/http"
     "time"
-    "log"
-
     "labix.org/v2/mgo/bson"
     "github.com/gorilla/mux"
     "io"
@@ -33,7 +31,7 @@ func ServerIndex(w http.ResponseWriter, r *http.Request) {
     SearchAll(bson.M{}, collection, &servers)
 
     if err := json.NewEncoder(w).Encode(servers); err != nil {
-        panic(err)
+        Log("could not encode servers struct, Error: " + err.Error(), ERROR)
     }
 }
 
@@ -47,7 +45,7 @@ func ServerShow(w http.ResponseWriter, r *http.Request) {
     SearchOne(bson.M{"_id": oid}, collection, &server)
 
     if err := json.NewEncoder(w).Encode(server); err != nil {
-        panic(err)
+        Log("could not encode server struct, Error: " + err.Error(), ERROR)
     }
 }
 
@@ -56,18 +54,18 @@ func ServerCreate(w http.ResponseWriter, r *http.Request) {
         var server Server
         body, err := ioutil.ReadAll(io.LimitReader(r.Body, 1048576))
         if err != nil {
-            panic(err)
+            Log("could not read POST body, Error: " + err.Error(), ERROR)
         }
 
         if err := r.Body.Close(); err != nil {
-            panic(err)
+            Log("could not close POST body, Error: " + err.Error(), ERROR)
         }
 
         if err := json.Unmarshal(body, &server); err != nil {
             w.Header().Set("Content-Type", "application/json; charset=UTF-8")
             w.WriteHeader(422)  // unprocessable entity
             if err := json.NewEncoder(w).Encode(err); err != nil {
-                panic(err)
+                Log("could not json/encode error, Error: " + err.Error(), ERROR)
             }
         }
         session, collection := InitServerCollection()
@@ -75,7 +73,7 @@ func ServerCreate(w http.ResponseWriter, r *http.Request) {
         server.Added = time.Now()
         err = collection.Insert(server)
         if err != nil {
-            log.Println(err)
+            Log("could not insert server to DB, Error: " + err.Error(), ERROR)
         }
         w.Header().Set("Content-Type", "application/json; charset=UTF=8")
         w.WriteHeader(http.StatusCreated)
@@ -95,7 +93,7 @@ func ServerDelete(w http.ResponseWriter, r *http.Request) {
             w.Header().Set("Content-Type", "application/json; charset=UTF-8")
             w.WriteHeader(http.StatusInternalServerError)
             if err := json.NewEncoder(w).Encode(err); err != nil {
-                log.Println(err)
+                Log("could not json/encode error, Error: " + err.Error(), ERROR)
             }
         }
     }
@@ -113,34 +111,31 @@ func AuthHandler(w http.ResponseWriter, r *http.Request) {
     var user AdminUser
     json.NewDecoder(r.Body).Decode(&user)
 
-    log.Printf("Authenticate: user[%s] pass[%s]\n", user.Username, user.Password)
+    Log("Authenticate: user["+ user.Username + "] pass[" + user.Password + "]", INFO)
 
     if Authenticate(user.Username, user.Password) {
-        log.Printf("Authenticate: user[%s] valid", user.Username)
+        Log("Authenticating user[" + user.Username + "] successful", INFO)
     } else {
-        log.Printf("Authenticate: user[%s] invalid", user.Username)
+        Log("Authenticating user[" + user.Username + "] not successful", WARN)
         w.WriteHeader(http.StatusForbidden)
         return
     }
 
     tokenString, err := CreateTokenString(user.Username)
+    Log("Created token string", DEBUG)
 
-    //DEBUG
-    log.Println("Created token stirng")
     if err != nil {
         w.WriteHeader(http.StatusInternalServerError)
         fmt.Fprintln(w, "Sorry error while Signing Key")
-        log.Printf("Token Signing error: %s", err)
+        Log("Token Signing error: %s" + err.Error(), ERROR)
         return
     }
 
     w.Header().Set("Content-Type", "application/json; charset=UTF-8")
     w.WriteHeader(http.StatusOK)
-    //DEBUG
-    log.Println("About to send the OK")
-    log.Printf("Sending back token: %s\n", tokenString)
+    Log("Sending back token: " + tokenString, DEBUG)
     if err := json.NewEncoder(w).Encode(map[string]string{"token":tokenString}); err != nil {
-        log.Println(err)
+        Log("Sending token unsuccessful, Error: " + err.Error(), ERROR)
     }
 }
 

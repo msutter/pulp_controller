@@ -1,7 +1,6 @@
 package main
 
 import (
-    "log"
     "labix.org/v2/mgo"
     "labix.org/v2/mgo/bson"
 )
@@ -10,10 +9,9 @@ func Connect() *mgo.Session{
     url := "mongodb://testuser:testpassword@localhost/pulp_manager_api_test"
     session, err := mgo.Dial(url)
     if err != nil {
-        log.Fatal(err)
+        Log("Connection to mongodb failed, Error: " + err.Error(), ERROR)
         panic(err)
     }
-
     return session
 }
 
@@ -26,13 +24,13 @@ func InitServerCollection() (*mgo.Session, *mgo.Collection) {
 func SearchOne(search bson.M, collection *mgo.Collection, result interface{}) {
     err := collection.Find(search).One(result)
     if err != nil {
-        log.Println(err)
+        Log("MongoDB search failed, Error: " + err.Error(), ERROR)
     }
 }
 
 func SearchAll(search bson.M, collection *mgo.Collection, result interface{}) {
     err := collection.Find(search).All(result)
     if err != nil {
-        log.Println(err)
+        Log("MongoDB search failed, Error: " + err.Error(), ERROR)
     }
 }

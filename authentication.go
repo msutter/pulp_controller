@@ -4,7 +4,6 @@ import (
     jwt "github.com/dgrijalva/jwt-go"
     "crypto/rsa"
     "io/ioutil"
-    "log"
     "time"
     "net/http"
     "encoding/json"
@@ -14,6 +13,7 @@ import (
 const (
     privKeyPath = "keys/app.rsa"     // openssl genrsa -out app.rsa 2048
     pubKeyPath = "keys/app.rsa.pub"  // openssl rsa -in app.rsa -pubout > app.rsa.pub
+    TOKENEXPIRATION = 1          // Token expiration in hours
 )
 
 var (
@@ -23,16 +23,24 @@ var (
 
 func initKeys() {
     signBytes, err := ioutil.ReadFile(privKeyPath)
-    fatal(err)
+    if err != nil {
+        Log("Reading private Key File " + privKeyPath + " failed, Error: " + err.Error(), ERROR)
+    }
 
     signKey, err = jwt.ParseRSAPrivateKeyFromPEM(signBytes)
-    fatal(err)
+    if err != nil {
+        Log("Parsing private Key File failed, Error: " + err.Error(), ERROR)
+    }
 
     verifyBytes, err := ioutil.ReadFile(pubKeyPath)
-    fatal(err)
+    if err != nil {
+        Log("Reading public Key File " + pubKeyPath + " failed, Error: " + err.Error(), ERROR)
+    }
 
     verifyKey, err = jwt.ParseRSAPublicKeyFromPEM(verifyBytes)
-    fatal(err)
+    if err != nil {
+        Log("Parsing public Key File failed, Error: " + err.Error(), ERROR)
+    }
 }
 
 func CreateTokenString(user string) (string, error) {
@@ -43,22 +51,24 @@ func CreateTokenString(user string) (string, error) {
     t.Claims["AccesToken"] = "level1"
     t.Claims["CustomUserInfo"] = struct {
         Name string
-        Kind string
-    }{user, "human"}
+        Role string
+    }{user, "admin"}
 
-    //DEBUG
-    log.Printf("Created claims")
+    Log("Created claims", DEBUG)
     // set expire time
-    t.Claims["exp"] = time.Now().Add(time.Hour * 1).Unix()
+    t.Claims["exp"] = time.Now().Add(time.Hour * TOKENEXPIRATION).Unix()
     return t.SignedString(signKey)
 }
 
 func IsAllowed(w http.ResponseWriter, r *http.Request) bool {
+    Log("Checking whether admintoken is set", DEBUG)
     client_token := r.Header.Get("admintoken")
     if client_token == "" {
         w.Header().Set("Content-Type", "application/json; charset=UTF-8")
         w.WriteHeader(http.StatusForbidden)
         json.NewEncoder(w).Encode(map[string]string{"error": "token not set"})
+        Log("Token 'admintoken' not set", WARN)
+        return false
     }
 
     // validate the token
@@ -71,7 +81,7 @@ func IsAllowed(w http.ResponseWriter, r *http.Request) bool {
         if !token.Valid { // may be invalid
             w.WriteHeader(http.StatusUnauthorized)
             json.NewEncoder(w).Encode(map[string]string {"error": "token is invalid"})
-            log.Println("Token is invalid")
+            Log("Token is invalid", WARN)
             return false
         }
         return true
@@ -84,12 +94,14 @@ func IsAllowed(w http.ResponseWriter, r *http.Request) bool {
             w.Header().Set("Content-Type", "application/json; charset=UTF-8")
             w.WriteHeader(http.StatusUnauthorized)
             json.NewEncoder(w).Encode(map[string]string {"error": "token expired"})
+            Log("Token expired", WARN)
             return false
 
         default:
             w.Header().Set("Content-Type", "application/json; charset=UTF-8")
             w.WriteHeader(http.StatusUnauthorized)
             json.NewEncoder(w).Encode(map[string]string {"error": "error while parsing token "})
+            Log("Error while parsing token: " + token.Raw, WARN)
             return false
         }
 
@@ -97,6 +109,7 @@ func IsAllowed(w http.ResponseWriter, r *http.Request) bool {
         w.Header().Set("Content-Type", "application/json; charset=UTF-8")
         w.WriteHeader(http.StatusInternalServerError)
         json.NewEncoder(w).Encode(map[string]string {"error": "something went wrong"})
+        Log("Something with this token is wrong: " + token.Raw, ERROR)
         return false
     }
 }
@@ -113,6 +126,6 @@ func Authenticate(user string, pass string) bool {
 
 func fatal(err error) {
     if err != nil {
-        log.Fatal(err)
+        Log(err.Error(), ERROR)
     }
 }
