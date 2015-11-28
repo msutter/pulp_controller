@@ -6,7 +6,8 @@ import (
 )
 
 func Connect() *mgo.Session{
-    url := "mongodb://testuser:testpassword@localhost/pulp_manager_api_test"
+    url := "mongodb://"+settings.DbUser+":"+settings.DbPassword+"@"+settings.DbHost+":"+settings.DbPort+"/"+settings.DbName
+    Log("Connecting to "+url, INFO)
     session, err := mgo.Dial(url)
     if err != nil {
         Log("Connection to mongodb failed, Error: " + err.Error(), ERROR)
@@ -17,7 +18,7 @@ func Connect() *mgo.Session{
 
 func InitServerCollection() (*mgo.Session, *mgo.Collection) {
     session := Connect()
-    collection := session.DB("pulp_manager_api_test").C("servers")
+    collection := session.DB(settings.DbName).C("servers")
     return session, collection
 }
 

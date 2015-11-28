@@ -9,22 +9,15 @@ import (
     "encoding/json"
 )
 
-
-const (
-    privKeyPath = "keys/app.rsa"     // openssl genrsa -out app.rsa 2048
-    pubKeyPath = "keys/app.rsa.pub"  // openssl rsa -in app.rsa -pubout > app.rsa.pub
-    TOKENEXPIRATION = 1          // Token expiration in hours
-)
-
 var (
     verifyKey *rsa.PublicKey
     signKey *rsa.PrivateKey
 )
 
 func initKeys() {
-    signBytes, err := ioutil.ReadFile(privKeyPath)
+    signBytes, err := ioutil.ReadFile(settings.PrivKeyPath)
     if err != nil {
-        Log("Reading private Key File " + privKeyPath + " failed, Error: " + err.Error(), ERROR)
+        Log("Reading private Key File " + settings.PrivKeyPath + " failed, Error: " + err.Error(), ERROR)
     }
 
     signKey, err = jwt.ParseRSAPrivateKeyFromPEM(signBytes)
@@ -32,9 +25,9 @@ func initKeys() {
         Log("Parsing private Key File failed, Error: " + err.Error(), ERROR)
     }
 
-    verifyBytes, err := ioutil.ReadFile(pubKeyPath)
+    verifyBytes, err := ioutil.ReadFile(settings.PubKeyPath)
     if err != nil {
-        Log("Reading public Key File " + pubKeyPath + " failed, Error: " + err.Error(), ERROR)
+        Log("Reading public Key File " + settings.PubKeyPath + " failed, Error: " + err.Error(), ERROR)
     }
 
     verifyKey, err = jwt.ParseRSAPublicKeyFromPEM(verifyBytes)
@@ -56,7 +49,7 @@ func CreateTokenString(user string) (string, error) {
 
     Log("Created claims", DEBUG)
     // set expire time
-    t.Claims["exp"] = time.Now().Add(time.Hour * TOKENEXPIRATION).Unix()
+    t.Claims["exp"] = time.Now().Add(time.Hour * time.Duration(settings.Tokenexpiration)).Unix()
     return t.SignedString(signKey)
 }
 

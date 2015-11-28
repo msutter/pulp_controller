@@ -2,8 +2,6 @@ package main
 
 import "net/http"
 
-const api_version string = "/v1"
-
 type Route struct {
     Name        string
     Method      string
@@ -13,47 +11,50 @@ type Route struct {
 
 type Routes []Route
 
-var routes = Routes{
-    Route{
-        "Index",
-        "GET",
-        api_version,
-        Index,
-    },
-    Route{
-        "ServerIndex",
-        "GET",
-        api_version + "/servers",
-        ServerIndex,
-    },
-    Route{
-        "ServerShow",
-        "GET",
-        api_version + "/servers/{serverId}",
-        ServerShow,
-    },
-    Route{
-        "ServerCreate",
-        "POST",
-        api_version + "/servers",
-        ServerCreate,
-    },
-    Route{
-        "ServerDelete",
-        "DELETE",
-        api_version + "/servers/{serverId}",
-        ServerDelete,
-    },
-    Route{
-        "Authenticate",
-        "POST",
-        api_version + "/authenticate",
-        AuthHandler,
-    },
-    Route{
-        "Restricted",
-        "GET",
-        api_version + "/restricted",
-        RestrictedHandler,
-    },
+func SetRoutes() Routes {
+    var routes = Routes{
+        Route{
+            "Index",
+            "GET",
+            settings.ApiVersion,
+            Index,
+        },
+        Route{
+            "ServerIndex",
+            "GET",
+            settings.ApiVersion + "/servers",
+            ServerIndex,
+        },
+        Route{
+            "ServerShow",
+            "GET",
+            settings.ApiVersion + "/servers/{serverId}",
+            ServerShow,
+        },
+        Route{
+            "ServerCreate",
+            "POST",
+            settings.ApiVersion + "/servers",
+            ServerCreate,
+        },
+        Route{
+            "ServerDelete",
+            "DELETE",
+            settings.ApiVersion + "/servers/{serverId}",
+            ServerDelete,
+        },
+        Route{
+            "Authenticate",
+            "POST",
+            settings.ApiVersion + "/authenticate",
+            AuthHandler,
+        },
+        Route{
+            "Restricted",
+            "GET",
+            settings.ApiVersion + "/restricted",
+            RestrictedHandler,
+        },
+    }
+    return routes
 }

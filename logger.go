@@ -12,7 +12,6 @@ const (
     WARN int = 20
     INFO int = 30
     DEBUG int = 40
-    LOGLEVEL int = INFO
 )
 
 func Logger(inner http.Handler, name string) http.Handler {
@@ -24,7 +23,7 @@ func Logger(inner http.Handler, name string) http.Handler {
 }
 
 func Log(msg string, level int) {
-    if LOGLEVEL >= level {
+    if settings.Loglevel >= level {
         timestamp := time.Now()
         var namelevel string
         switch level {
