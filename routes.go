@@ -44,4 +44,16 @@ var routes = Routes{
         api_version + "/servers/{serverId}",
         ServerDelete,
     },
+    Route{
+        "Authenticate",
+        "POST",
+        api_version + "/authenticate",
+        AuthHandler,
+    },
+    Route{
+        "Restricted",
+        "GET",
+        api_version + "/restricted",
+        RestrictedHandler,
+    },
 }
