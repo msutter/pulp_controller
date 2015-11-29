@@ -1,6 +1,9 @@
 package main
 
-import "net/http"
+import (
+    "net/http"
+    "github.com/ampersand8/pulp_controller/config"
+)
 
 type Route struct {
     Name        string
@@ -16,43 +19,43 @@ func SetRoutes() Routes {
         Route{
             "Index",
             "GET",
-            settings.ApiVersion,
+            config.Settings.ApiVersion,
             Index,
         },
         Route{
             "ServerIndex",
             "GET",
-            settings.ApiVersion + "/servers",
+            config.Settings.ApiVersion + "/servers",
             ServerIndex,
         },
         Route{
             "ServerShow",
             "GET",
-            settings.ApiVersion + "/servers/{serverId}",
+            config.Settings.ApiVersion + "/servers/{serverId}",
             ServerShow,
         },
         Route{
             "ServerCreate",
             "POST",
-            settings.ApiVersion + "/servers",
+            config.Settings.ApiVersion + "/servers",
             ServerCreate,
         },
         Route{
             "ServerDelete",
             "DELETE",
-            settings.ApiVersion + "/servers/{serverId}",
+            config.Settings.ApiVersion + "/servers/{serverId}",
             ServerDelete,
         },
         Route{
             "Authenticate",
             "POST",
-            settings.ApiVersion + "/authenticate",
+            config.Settings.ApiVersion + "/authenticate",
             AuthHandler,
         },
         Route{
             "Restricted",
             "GET",
-            settings.ApiVersion + "/restricted",
+            config.Settings.ApiVersion + "/restricted",
             RestrictedHandler,
         },
     }

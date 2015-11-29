@@ -1,4 +1,4 @@
-package main
+package logger
 
 import (
     "log"
@@ -23,7 +23,7 @@ func Logger(inner http.Handler, name string) http.Handler {
 }
 
 func Log(msg string, level int) {
-    if settings.Loglevel >= level {
+    if 30 >= level {
         timestamp := time.Now()
         var namelevel string
         switch level {

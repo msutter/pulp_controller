@@ -9,6 +9,8 @@ import (
     "github.com/gorilla/mux"
     "io"
     "io/ioutil"
+    "github.com/ampersand8/pulp_controller/logger"
+    "github.com/ampersand8/pulp_controller/authentication"
 )
 
 type AdminUser struct {
@@ -31,7 +33,7 @@ func ServerIndex(w http.ResponseWriter, r *http.Request) {
     SearchAll(bson.M{}, collection, &servers)
 
     if err := json.NewEncoder(w).Encode(servers); err != nil {
-        Log("could not encode servers struct, Error: " + err.Error(), ERROR)
+        logger.Log("could not encode servers struct, Error: " + err.Error(), logger.ERROR)
     }
 }
 
@@ -45,27 +47,27 @@ func ServerShow(w http.ResponseWriter, r *http.Request) {
     SearchOne(bson.M{"_id": oid}, collection, &server)
 
     if err := json.NewEncoder(w).Encode(server); err != nil {
-        Log("could not encode server struct, Error: " + err.Error(), ERROR)
+        logger.Log("could not encode server struct, Error: " + err.Error(), logger.ERROR)
     }
 }
 
 func ServerCreate(w http.ResponseWriter, r *http.Request) {
-    if IsAllowed(w, r) {
+    if authentication.IsAllowed(w, r) {
         var server Server
         body, err := ioutil.ReadAll(io.LimitReader(r.Body, 1048576))
         if err != nil {
-            Log("could not read POST body, Error: " + err.Error(), ERROR)
+            logger.Log("could not read POST body, Error: " + err.Error(), logger.ERROR)
         }
 
         if err := r.Body.Close(); err != nil {
-            Log("could not close POST body, Error: " + err.Error(), ERROR)
+            logger.Log("could not close POST body, Error: " + err.Error(), logger.ERROR)
         }
 
         if err := json.Unmarshal(body, &server); err != nil {
             w.Header().Set("Content-Type", "application/json; charset=UTF-8")
             w.WriteHeader(422)  // unprocessable entity
             if err := json.NewEncoder(w).Encode(err); err != nil {
-                Log("could not json/encode error, Error: " + err.Error(), ERROR)
+                logger.Log("could not json/encode error, Error: " + err.Error(), logger.ERROR)
             }
         }
         session, collection := InitServerCollection()
@@ -73,7 +75,7 @@ func ServerCreate(w http.ResponseWriter, r *http.Request) {
         server.Added = time.Now()
         err = collection.Insert(server)
         if err != nil {
-            Log("could not insert server to DB, Error: " + err.Error(), ERROR)
+            logger.Log("could not insert server to DB, Error: " + err.Error(), logger.ERROR)
         }
         w.Header().Set("Content-Type", "application/json; charset=UTF=8")
         w.WriteHeader(http.StatusCreated)
@@ -84,7 +86,7 @@ func ServerCreate(w http.ResponseWriter, r *http.Request) {
 }
 
 func ServerDelete(w http.ResponseWriter, r *http.Request) {
-    if IsAllowed(w, r) {
+    if authentication.IsAllowed(w, r) {
         oid := getOID("serverId", r)
         session, collection := InitServerCollection()
         defer session.Close()
@@ -93,7 +95,7 @@ func ServerDelete(w http.ResponseWriter, r *http.Request) {
             w.Header().Set("Content-Type", "application/json; charset=UTF-8")
             w.WriteHeader(http.StatusInternalServerError)
             if err := json.NewEncoder(w).Encode(err); err != nil {
-                Log("could not json/encode error, Error: " + err.Error(), ERROR)
+                logger.Log("could not json/encode error, Error: " + err.Error(), logger.ERROR)
             }
         }
     }
@@ -111,31 +113,31 @@ func AuthHandler(w http.ResponseWriter, r *http.Request) {
     var user AdminUser
     json.NewDecoder(r.Body).Decode(&user)
 
-    Log("Authenticate: user["+ user.Username + "] pass[" + user.Password + "]", INFO)
+    logger.Log("Authenticate: user["+ user.Username + "] pass[" + user.Password + "]", logger.INFO)
 
-    if Authenticate(user.Username, user.Password) {
-        Log("Authenticating user[" + user.Username + "] successful", INFO)
+    if authentication.Authenticate(user.Username, user.Password) {
+        logger.Log("Authenticating user[" + user.Username + "] successful", logger.INFO)
     } else {
-        Log("Authenticating user[" + user.Username + "] not successful", WARN)
+        logger.Log("Authenticating user[" + user.Username + "] not successful", logger.WARN)
         w.WriteHeader(http.StatusForbidden)
         return
     }
 
-    tokenString, err := CreateTokenString(user.Username)
-    Log("Created token string", DEBUG)
+    tokenString, err := authentication.CreateTokenString(user.Username)
+    logger.Log("Created token string", logger.DEBUG)
 
     if err != nil {
         w.WriteHeader(http.StatusInternalServerError)
         fmt.Fprintln(w, "Sorry error while Signing Key")
-        Log("Token Signing error: %s" + err.Error(), ERROR)
+        logger.Log("Token Signing error: %s" + err.Error(), logger.ERROR)
         return
     }
 
     w.Header().Set("Content-Type", "application/json; charset=UTF-8")
     w.WriteHeader(http.StatusOK)
-    Log("Sending back token: " + tokenString, DEBUG)
+    logger.Log("Sending back token: " + tokenString, logger.DEBUG)
     if err := json.NewEncoder(w).Encode(map[string]string{"token":tokenString}); err != nil {
-        Log("Sending token unsuccessful, Error: " + err.Error(), ERROR)
+        logger.Log("Sending token unsuccessful, Error: " + err.Error(), logger.ERROR)
     }
 }
 
@@ -143,7 +145,7 @@ func AuthHandler(w http.ResponseWriter, r *http.Request) {
 func RestrictedHandler(w http.ResponseWriter, r *http.Request) {
     // if user has no or invalid token error message is generated by Authenticate
     // if token is valid the content below is shown
-    if IsAllowed(w, r) {
+    if authentication.IsAllowed(w, r) {
         w.Header().Set("Content-Type", "application/json; charset=UTF-8")
         w.WriteHeader(http.StatusOK)
         json.NewEncoder(w).Encode(map[string]string {"secret": "you made it to the secret area"})
