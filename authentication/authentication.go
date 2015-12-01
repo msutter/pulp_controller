@@ -1,3 +1,4 @@
+// Everything about authentication and authorization
 package authentication
 
 import (
