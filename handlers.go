@@ -11,6 +11,7 @@ import (
     "io/ioutil"
     "github.com/ampersand8/pulp_controller/logger"
     "github.com/ampersand8/pulp_controller/authentication"
+    db "github.com/ampersand8/pulp_controller/database"
 )
 
 type AdminUser struct {
@@ -26,11 +27,11 @@ func ServerIndex(w http.ResponseWriter, r *http.Request) {
     w.Header().Set("Content-Type", "application/json; charset=UTF-8")
     w.WriteHeader(http.StatusOK)
 
-    session, collection := InitServerCollection()
+    session, collection := db.InitServerCollection()
     defer session.Close()
     servers := Servers{}
 
-    SearchAll(bson.M{}, collection, &servers)
+    db.SearchAll(bson.M{}, collection, &servers)
 
     if err := json.NewEncoder(w).Encode(servers); err != nil {
         logger.Log("could not encode servers struct, Error: " + err.Error(), logger.ERROR)
@@ -40,11 +41,11 @@ func ServerIndex(w http.ResponseWriter, r *http.Request) {
 func ServerShow(w http.ResponseWriter, r *http.Request) {
     oid := getOID("serverId", r)
 
-    session, collection := InitServerCollection()
+    session, collection := db.InitServerCollection()
     defer session.Close()
     server := Server{}
 
-    SearchOne(bson.M{"_id": oid}, collection, &server)
+    db.SearchOne(bson.M{"_id": oid}, collection, &server)
 
     if err := json.NewEncoder(w).Encode(server); err != nil {
         logger.Log("could not encode server struct, Error: " + err.Error(), logger.ERROR)
@@ -70,7 +71,7 @@ func ServerCreate(w http.ResponseWriter, r *http.Request) {
                 logger.Log("could not json/encode error, Error: " + err.Error(), logger.ERROR)
             }
         }
-        session, collection := InitServerCollection()
+        session, collection := db.InitServerCollection()
         defer session.Close()
         server.Added = time.Now()
         err = collection.Insert(server)
@@ -88,7 +89,7 @@ func ServerCreate(w http.ResponseWriter, r *http.Request) {
 func ServerDelete(w http.ResponseWriter, r *http.Request) {
     if authentication.IsAllowed(w, r) {
         oid := getOID("serverId", r)
-        session, collection := InitServerCollection()
+        session, collection := db.InitServerCollection()
         defer session.Close()
         err := collection.Remove(bson.M{"_id": oid})
         if err != nil {
