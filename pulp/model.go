@@ -1,4 +1,4 @@
-package main
+package pulp
 
 import (
     "time"
@@ -15,3 +15,10 @@ type Server struct  {
 }
 
 type Servers []Server
+
+type Repo struct {
+    Id          bson.ObjectId  `json:"id" bson:"_id,omitempty"`
+    Name        string         `json:"name"`
+}
+
+type Repos []Repo

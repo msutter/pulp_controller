@@ -11,6 +11,7 @@ import (
     "io/ioutil"
     "github.com/ampersand8/pulp_controller/logger"
     "github.com/ampersand8/pulp_controller/authentication"
+    "github.com/ampersand8/pulp_controller/pulp"
     db "github.com/ampersand8/pulp_controller/database"
 )
 
@@ -29,7 +30,7 @@ func ServerIndex(w http.ResponseWriter, r *http.Request) {
 
     session, collection := db.InitServerCollection()
     defer session.Close()
-    servers := Servers{}
+    servers := pulp.Servers{}
 
     db.SearchAll(bson.M{}, collection, &servers)
 
@@ -43,7 +44,7 @@ func ServerShow(w http.ResponseWriter, r *http.Request) {
 
     session, collection := db.InitServerCollection()
     defer session.Close()
-    server := Server{}
+    server := pulp.Server{}
 
     db.SearchOne(bson.M{"_id": oid}, collection, &server)
 
@@ -54,7 +55,7 @@ func ServerShow(w http.ResponseWriter, r *http.Request) {
 
 func ServerCreate(w http.ResponseWriter, r *http.Request) {
     if authentication.IsAllowed(w, r) {
-        var server Server
+        var server pulp.Server
         body, err := ioutil.ReadAll(io.LimitReader(r.Body, 1048576))
         if err != nil {
             logger.Log("could not read POST body, Error: " + err.Error(), logger.ERROR)
@@ -99,6 +100,22 @@ func ServerDelete(w http.ResponseWriter, r *http.Request) {
                 logger.Log("could not json/encode error, Error: " + err.Error(), logger.ERROR)
             }
         }
+    }
+}
+
+func RepoList(w http.ResponseWriter, r *http.Request) {
+    oid := getOID("serverId", r)
+
+    session, collection := db.InitServerCollection()
+    defer session.Close()
+    server := pulp.Server{}
+
+    db.SearchOne(bson.M{"_id": oid}, collection, &server)
+
+    repos := pulp.ListRepos(server)
+
+    if err := json.NewEncoder(w).Encode(repos); err != nil {
+        logger.Log("could not encode repos struct, Error: " + err.Error(), logger.ERROR)
     }
 }
 

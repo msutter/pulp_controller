@@ -58,6 +58,12 @@ func SetRoutes() Routes {
             config.Settings.ApiVersion + "/restricted",
             RestrictedHandler,
         },
+        Route{
+            "RepoList",
+            "GET",
+            config.Settings.ApiVersion + "/servers/{serverId}/repos",
+            RepoList,
+        },
     }
     return routes
 }
