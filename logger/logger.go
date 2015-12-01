@@ -8,11 +8,17 @@ import (
 
 // The smaller the loglevel the less you see
 const (
-    ERROR int  = 10
-    WARN int = 20
-    INFO int = 30
+    ERROR int = 10
+    WARN  int = 20
+    INFO  int = 30
     DEBUG int = 40
 )
+
+var LOGLEVEL int = 30
+
+func SetLogLevel(loglevel int) {
+    LOGLEVEL = loglevel
+}
 
 func Logger(inner http.Handler, name string) http.Handler {
     return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -23,7 +29,7 @@ func Logger(inner http.Handler, name string) http.Handler {
 }
 
 func Log(msg string, level int) {
-    if 30 >= level {
+    if LOGLEVEL >= level {
         timestamp := time.Now()
         var namelevel string
         switch level {
