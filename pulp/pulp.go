@@ -6,21 +6,30 @@ import (
     "io/ioutil"
     "io"
     "encoding/json"
+    "encoding/base64"
 )
+
+func Login(server Server, r *http.Request) {
+    token := string(base64.StdEncoding.EncodeToString([]byte(server.Username + ":" + server.Password)))
+    r.Header.Add("Authorization", "Basic " + token)
+}
 
 func ListRepos(server Server) Repos {
     var repos Repos
-    r, err := http.Get(server.Url)
+    client := http.Client{}
+    r, err := http.NewRequest("GET", server.Url, nil)
+    Login(server, r)
+    resp, err := client.Do(r)
     if err != nil {
         logger.Log(err.Error(), logger.WARN)
     }
 
-    body, err := ioutil.ReadAll(io.LimitReader(r.Body, 1048576))
+    body, err := ioutil.ReadAll(io.LimitReader(resp.Body, 1048576))
     if err != nil {
         logger.Log(err.Error(), logger.ERROR)
     }
 
-    if err := r.Body.Close(); err != nil {
+    if err := resp.Body.Close(); err != nil {
         logger.Log(err.Error(), logger.ERROR)
     }
 
