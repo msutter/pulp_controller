@@ -17,7 +17,7 @@ func Login(server Server, r *http.Request) {
 func ListRepos(server Server) Repos {
     var repos Repos
     client := http.Client{}
-    r, err := http.NewRequest("GET", server.Url, nil)
+    r, err := http.NewRequest("GET", server.Url+"/repositories/", nil)
     Login(server, r)
     resp, err := client.Do(r)
     if err != nil {
